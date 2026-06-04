@@ -28,7 +28,11 @@ Representa el **Edge Gateway** en AWS IoT Core, genera credenciales X.509, restr
 | `SensorDataToDynamoDB_*` | `SELECT * FROM 'lab/sensors/data'` | `dynamodbv2` PutItem |
 | `SensorDataToS3_*` | `SELECT * FROM 'lab/sensors/data'` | `s3` PutObject con particiones `year/month/day` |
 
-## Próximos cambios
+## Regla 3 — Alertas (Fase 4) ✅
 
-- **Regla 3**: Condición `sensor_type = 'temperature' AND value > umbral` → Lambda de alerta.
-- Posible ampliación de política si se añaden tópicos.
+| Recurso | Descripción |
+|---------|-------------|
+| `aws_iot_topic_rule.temperature_alert` | `temperature` y `value > umbral` (default 30°C) |
+| `aws_lambda_permission` | IoT Core → Lambda `alert_publisher` |
+
+Umbral configurable: variable `temperature_alert_threshold` en `terraform/variables.tf`.

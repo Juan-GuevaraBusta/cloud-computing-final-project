@@ -21,3 +21,9 @@ variable "mongodb_database" {
   type        = string
   default     = "iot"
 }
+
+variable "temperature_alert_threshold" {
+  description = "Umbral de temperatura (°C) para la regla IoT 3 de alertas"
+  type        = number
+  default     = 30
+}

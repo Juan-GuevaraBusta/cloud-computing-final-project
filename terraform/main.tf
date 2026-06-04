@@ -41,26 +41,34 @@ module "database" {
   environment  = var.environment
 }
 
+# Módulo de mensajería y alertas (Fase 4) — antes de IoT regla 3
+module "messaging" {
+  source       = "./modules/messaging"
+  project_name = var.project_name
+  environment  = var.environment
+  lab_role_arn = data.aws_iam_role.lab_role.arn
+}
+
 # Módulo de IoT Core
 module "iot" {
-  source             = "./modules/iot"
-  project_name       = var.project_name
-  environment        = var.environment
-  
-  # Variables inyectadas desde data sources globales
-  lab_role_arn       = data.aws_iam_role.lab_role.arn
-  account_id         = data.aws_caller_identity.current.account_id
-  region             = data.aws_region.current.name
-  
-  # iot_endpoint: Es la URL única (Endpoint ATS) asignada por AWS a tu cuenta y región para IoT Core.
-  # Es indispensable inyectarla a Mosquitto (en su archivo mosquitto.conf) para que el Bridge sepa 
-  # exactamente a qué dirección de servidor de Amazon debe conectarse y enviar los mensajes MQTT.
-  iot_endpoint       = data.aws_iot_endpoint.iot_endpoint.endpoint_address
-  root_ca_pem        = data.http.root_ca.response_body
-  
-  # Variables inyectadas desde outputs de otros módulos
+  source       = "./modules/iot"
+  project_name = var.project_name
+  environment  = var.environment
+
+  lab_role_arn   = data.aws_iam_role.lab_role.arn
+  account_id     = data.aws_caller_identity.current.account_id
+  region         = data.aws_region.current.name
+  iot_endpoint   = data.aws_iot_endpoint.iot_endpoint.endpoint_address
+  root_ca_pem    = data.http.root_ca.response_body
+
   sensor_bucket_name = module.storage.sensor_bucket_name
   sensor_table_name  = module.database.sensor_table_name
+
+  alert_publisher_lambda_arn  = module.messaging.alert_publisher_lambda_arn
+  alert_publisher_lambda_name = module.messaging.alert_publisher_lambda_name
+  temperature_alert_threshold = var.temperature_alert_threshold
+
+  depends_on = [module.messaging]
 }
 
 # Módulo de red (VPC, SG, endpoint S3) — Fase 2

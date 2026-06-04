@@ -18,3 +18,12 @@ output "mongodb_uri" {
   value       = module.compute.mongodb_uri
   sensitive   = true
 }
+
+output "alert_queue_url" {
+  description = "Cola SQS de alertas de urgencia"
+  value       = module.messaging.alert_queue_url
+}
+
+output "temperature_alert_threshold" {
+  value = module.iot.temperature_alert_threshold
+}

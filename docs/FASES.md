@@ -45,11 +45,21 @@
 - Swagger: http://localhost:8000/docs (`make api-run`)
 - Repaso de preguntas: `docs/PUERTAS.md`
 
-**Puerta hacia Fase 4:** Responder sección "Fase 3 → Fase 4" en `docs/PUERTAS.md`.
+**Puerta hacia Fase 4:** ✅ Respuestas en `docs/DECISIONES.md` (sección Puerta Fase 3 → Fase 4).
 
 ---
 
-## Fase 4 — Alertas IoT → Lambda → SQS → CloudWatch
+## Fase 4 — Alertas IoT → Lambda → SQS → CloudWatch ✅
+
+**Implementado:**
+
+- Módulo `terraform/modules/messaging` (SQS + 2 Lambdas)
+- Regla IoT 3 en `modules/iot` (temperatura > umbral, default 30°C)
+- `lambda/alert_publisher`, `lambda/alert_consumer`
+
+**Verificación:** CloudWatch log group del consumer con mensajes `URGENCIA IoT`.
+
+**Puerta hacia Fase 5:** ver `docs/PUERTAS.md` (sección Fase 4 → 5, al cerrar ECS).
 
 ---
 

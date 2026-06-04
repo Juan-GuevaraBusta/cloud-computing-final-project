@@ -157,3 +157,26 @@ resource "aws_iot_topic_rule" "s3_rule" {
     role_arn    = var.lab_role_arn
   }
 }
+
+# === REGLA 3 — Alertas de temperatura (Fase 4) ===
+# Solo temperatura por encima del umbral; dispara Lambda → SQS → CloudWatch.
+
+resource "aws_iot_topic_rule" "temperature_alert" {
+  name        = "TemperatureAlertToLambda_${var.environment}"
+  description = "Alerta cuando temperatura supera ${var.temperature_alert_threshold}°C"
+  enabled     = true
+  sql         = "SELECT * FROM 'lab/sensors/data' WHERE sensor_type = 'temperature' AND value > ${var.temperature_alert_threshold}"
+  sql_version = "2016-03-23"
+
+  lambda {
+    function_arn = var.alert_publisher_lambda_arn
+  }
+}
+
+resource "aws_lambda_permission" "allow_iot_temperature_alert" {
+  statement_id  = "AllowIoTTemperatureAlert"
+  action        = "lambda:InvokeFunction"
+  function_name = var.alert_publisher_lambda_name
+  principal     = "iot.amazonaws.com"
+  source_arn    = aws_iot_topic_rule.temperature_alert.arn
+}

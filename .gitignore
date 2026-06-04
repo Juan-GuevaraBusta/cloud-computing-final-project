@@ -13,6 +13,10 @@ edge_gateway/mosquitto.conf
 # Lambda build artifacts
 lambda/s3_to_mongo/build/
 lambda/s3_to_mongo/deployment.zip
+lambda/alert_publisher/build/
+lambda/alert_publisher/deployment.zip
+lambda/alert_consumer/build/
+lambda/alert_consumer/deployment.zip
 
 # Python
 venv/

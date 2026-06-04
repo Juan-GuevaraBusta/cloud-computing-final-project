@@ -3,9 +3,9 @@
 # --- Comandos AWS (Terraform) ---
 
 lambda-build:
-	@echo "Empaquetando Lambda s3_to_mongo (dependencias Linux x86_64)..."
-	chmod +x lambda/s3_to_mongo/build.sh
-	bash lambda/s3_to_mongo/build.sh
+	@echo "Empaquetando Lambdas (s3_to_mongo + alertas)..."
+	chmod +x lambda/build_all.sh lambda/s3_to_mongo/build.sh lambda/alert_publisher/build.sh lambda/alert_consumer/build.sh
+	bash lambda/build_all.sh
 
 aws-up: lambda-build
 	@echo "Desplegando infraestructura en AWS (IoT, DynamoDB, S3, VPC, EC2 MongoDB, Lambda)..."

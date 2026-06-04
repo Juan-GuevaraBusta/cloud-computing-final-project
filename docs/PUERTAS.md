@@ -82,6 +82,26 @@ Enlaces: [Fases del proyecto](FASES.md) · [Decisiones de arquitectura](DECISION
 3. **Swagger UI** en `/docs` y OpenAPI en `/openapi.json` (FastAPI automático).
 4. MongoDB en IP privada de VPC; local requiere túnel/VPN; ECS en la misma VPC sí alcanza el EC2.
 
+**Respuestas aprobadas del equipo:** ver [DECISIONES.md — Puerta Fase 3 → Fase 4](DECISIONES.md#puerta-fase-3--fase-4--respuestas-aprobada).
+
+---
+
+## Fase 4 → Fase 5 (ECS) — pendiente
+
+### Preguntas
+
+1. ¿Qué condición SQL usa la regla 3 y qué dispara?
+2. ¿Por qué hay SQS entre las dos Lambdas?
+3. ¿Dónde se ve la alerta final de urgencia?
+4. ¿Qué umbral de temperatura usamos y dónde se configura?
+
+### Respuestas modelo
+
+1. `sensor_type = 'temperature' AND value > umbral` en `lab/sensors/data` → Lambda publicadora.
+2. Desacoplar y reintentos; la regla IoT no espera el log en CloudWatch.
+3. CloudWatch Logs del **alert_consumer** (`URGENCIA IoT`).
+4. Default **30°C** en `terraform/variables.tf` → `temperature_alert_threshold` (SQL: `value > 30`).
+
 ---
 
 ## Cómo repasar
