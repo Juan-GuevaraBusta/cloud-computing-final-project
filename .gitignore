@@ -1,0 +1,29 @@
+# Secretos y configuración local
+.env
+.env.*
+!.env.example
+
+# Certificados IoT (generados por Terraform)
+edge_gateway/certs/*
+!edge_gateway/certs/.gitkeep
+
+# Mosquitto generado por Terraform
+edge_gateway/mosquitto.conf
+
+# Python
+venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Terraform
+terraform/.terraform/
+terraform/*.tfstate
+terraform/*.tfstate.*
+terraform/.terraform.lock.hcl
+terraform/**/crash.log
+
+# IDE / OS
+.idea/
+.vscode/
+.DS_Store
