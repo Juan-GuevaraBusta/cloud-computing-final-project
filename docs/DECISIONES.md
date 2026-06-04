@@ -103,6 +103,12 @@ DynamoDB **no se elimina**: sigue alimentado por IoT para tiempo real y reciente
 
 ---
 
+## Repaso de puertas (todas las fases)
+
+Ver **[docs/PUERTAS.md](PUERTAS.md)** — preguntas y respuestas modelo para sustentación.
+
+---
+
 ## Puerta Fase 1 — Respuestas de comprensión
 
 Usar esto para sustentación antes de pasar a Fase 2 (Lambda + MongoDB).

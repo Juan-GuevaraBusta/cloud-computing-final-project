@@ -15,8 +15,8 @@ Tabla para el **estado más reciente** de cada sensor (patrón device shadow / d
 ## Diseño de la tabla
 
 - **Nombre:** `SensorData-{environment}`
-- **Clave:** solo `device_id` (partition key), **sin sort key**
-- **Comportamiento:** cada nuevo evento con el mismo `device_id` **sobrescribe** el ítem anterior
+- **Claves:** `device_id` (partition) + `timestamp` (sort key) — Fase 1 opción A
+- **Comportamiento:** cada evento con distinto `timestamp` es un ítem nuevo; `GET /recent` usa `Query` + `Limit=10`
 - **Billing:** `PAY_PER_REQUEST`
 
 ## Uso en el proyecto final

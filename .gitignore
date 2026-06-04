@@ -10,6 +10,10 @@ edge_gateway/certs/*
 # Mosquitto generado por Terraform
 edge_gateway/mosquitto.conf
 
+# Lambda build artifacts
+lambda/s3_to_mongo/build/
+lambda/s3_to_mongo/deployment.zip
+
 # Python
 venv/
 __pycache__/

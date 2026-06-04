@@ -20,15 +20,32 @@
 
 ---
 
-## Fase 2 — S3 → Lambda → MongoDB
+## Fase 2 — S3 → Lambda → MongoDB ✅
 
-**Objetivo:** Histórico en MongoDB; Terraform en `modules/compute`.
+**Objetivo:** Histórico en MongoDB; Terraform en `modules/networking` + `modules/compute`.
+
+**Implementado en repo:**
+
+- VPC, SG, endpoint S3, EC2 `t3.micro` + MongoDB autenticado
+- Lambda `s3_to_mongo` en VPC + notificación S3 (`data/`)
+- DynamoDB con sort key `timestamp`
+- `make lambda-build` + `make aws-up`
+
+**Verificación:** tras deploy, esperar 5 min, subir datos con sensores, revisar CloudWatch y colección `sensor_events`.
 
 ---
 
-## Fase 3 — API FastAPI (local)
+## Fase 3 — API FastAPI (local) ✅
 
 **Objetivo:** Endpoints contra DynamoDB y MongoDB.
+
+**Implementado:**
+
+- Carpeta `api/` con FastAPI, Pydantic, servicios DynamoDB/MongoDB
+- Swagger: http://localhost:8000/docs (`make api-run`)
+- Repaso de preguntas: `docs/PUERTAS.md`
+
+**Puerta hacia Fase 4:** Responder sección "Fase 3 → Fase 4" en `docs/PUERTAS.md`.
 
 ---
 

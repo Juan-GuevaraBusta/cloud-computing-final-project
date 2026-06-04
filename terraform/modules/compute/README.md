@@ -1,26 +1,33 @@
-# Módulo compute — Cómputo (pendiente)
+# Módulo compute — EC2 MongoDB + Lambda S3 → MongoDB
 
-## Propósito
-
-Reservado para **AWS Lambda** y **Amazon ECS** del proyecto final. En el laboratorio base no despliega recursos.
-
-## Estado actual
-
-`main.tf` está vacío (solo comentario placeholder).
-
-## Qué se afrontará aquí
+## Propósito (Fase 2)
 
 | Componente | Función |
 |------------|---------|
-| Lambda `s3_to_mongo` | Trigger S3 → leer JSON → insertar en MongoDB |
-| Lambda `alert_publisher` | IoT Rule 3 → enviar mensaje a SQS |
-| Lambda `alert_consumer` | SQS → log en CloudWatch |
-| ECS + ECR | Contenedor FastAPI (API REST) |
+| `aws_instance.mongodb` | `t3.micro` con MongoDB 7 en Docker y autenticación |
+| `aws_lambda_function.s3_to_mongo` | Procesa `s3:ObjectCreated` bajo prefijo `data/` |
+| `aws_s3_bucket_notification` | Enlaza bucket de sensores con la Lambda |
+| Rol de ejecución | **LabRole** (Learner Lab no permite `iam:CreateRole`) |
 
-## Archivos previstos (futuro)
+## Archivos
 
 | Archivo | Responsabilidad |
 |---------|-----------------|
-| `main.tf` | Lambdas, roles IAM, ECS cluster, task definition, ECR |
-| `variables.tf` | URIs, nombres de colas, imagen Docker |
-| `outputs.tf` | URL del ALB, ARNs de Lambdas |
+| `main.tf` | EC2, Lambda, IAM, notificación S3, empaquetado zip |
+| `user_data/mongodb.sh.tpl` | Bootstrap Docker + contenedor Mongo |
+| `variables.tf` / `outputs.tf` | Entradas y URI sensible |
+
+## Código de la Lambda
+
+Fuente en `lambda/s3_to_mongo/` (ver README de esa carpeta).
+
+## Post-despliegue
+
+1. Esperar **3–5 min** tras `make aws-up` (Docker + Mongo en EC2).
+2. `make local-up` y generar eventos en S3.
+3. Revisar logs: CloudWatch → función `iot-edge-s3-to-mongo-lab`.
+4. URI para `.env`: `terraform -chdir=terraform output -raw mongodb_uri` (solo útil con acceso a la VPC).
+
+## Costos
+
+EC2 y Lambda solo existen mientras el stack de Terraform esté arriba (`make aws-down` / `make clean`).

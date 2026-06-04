@@ -8,6 +8,18 @@ terraform {
       source  = "hashicorp/http"
       version = "~> 3.0"
     }
+    random = {
+      source  = "hashicorp/random"
+      version = "~> 3.0"
+    }
+    archive = {
+      source  = "hashicorp/archive"
+      version = "~> 2.0"
+    }
+    null = {
+      source  = "hashicorp/null"
+      version = "~> 3.0"
+    }
   }
 }
 
@@ -49,4 +61,41 @@ module "iot" {
   # Variables inyectadas desde outputs de otros módulos
   sensor_bucket_name = module.storage.sensor_bucket_name
   sensor_table_name  = module.database.sensor_table_name
+}
+
+# Módulo de red (VPC, SG, endpoint S3) — Fase 2
+module "networking" {
+  source       = "./modules/networking"
+  project_name = var.project_name
+  environment  = var.environment
+  aws_region   = data.aws_region.current.name
+}
+
+# Contraseña MongoDB (no commitear; Terraform la inyecta a EC2 y Lambda)
+resource "random_password" "mongodb" {
+  length  = 16
+  special = false
+}
+
+# Módulo de cómputo: EC2 MongoDB + Lambda S3 → MongoDB en VPC — Fase 2
+module "compute" {
+  source = "./modules/compute"
+
+  project_name = var.project_name
+  environment  = var.environment
+
+  sensor_bucket_name = module.storage.sensor_bucket_name
+
+  mongodb_subnet_id           = module.networking.mongodb_subnet_id
+  mongodb_security_group_id   = module.networking.mongodb_security_group_id
+  lambda_subnet_ids           = module.networking.lambda_subnet_ids
+  lambda_security_group_id    = module.networking.lambda_security_group_id
+
+  mongodb_instance_type = "t3.micro"
+  mongodb_username      = var.mongodb_username
+  mongodb_password      = random_password.mongodb.result
+  mongodb_database      = var.mongodb_database
+  lab_role_arn          = data.aws_iam_role.lab_role.arn
+
+  depends_on = [module.storage, module.networking]
 }
