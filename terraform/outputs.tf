@@ -27,3 +27,26 @@ output "alert_queue_url" {
 output "temperature_alert_threshold" {
   value = module.iot.temperature_alert_threshold
 }
+
+output "ecr_repository_url" {
+  description = "Repositorio ECR de la API"
+  value       = module.compute.ecr_repository_url
+}
+
+output "api_alb_dns_name" {
+  description = "DNS público del ALB"
+  value       = module.compute.api_alb_dns_name
+}
+
+output "api_swagger_url" {
+  description = "Swagger UI en AWS"
+  value       = module.compute.api_swagger_url
+}
+
+output "ecs_cluster_name" {
+  value = module.compute.ecs_cluster_name
+}
+
+output "ecs_service_name" {
+  value = module.compute.ecs_service_name
+}

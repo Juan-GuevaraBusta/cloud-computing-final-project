@@ -19,3 +19,15 @@ output "lambda_security_group_id" {
 output "mongodb_security_group_id" {
   value = aws_security_group.mongodb.id
 }
+
+output "ecs_subnet_ids" {
+  value = [aws_subnet.public_a.id, aws_subnet.public_b.id]
+}
+
+output "ecs_security_group_id" {
+  value = aws_security_group.ecs.id
+}
+
+output "alb_security_group_id" {
+  value = aws_security_group.alb.id
+}

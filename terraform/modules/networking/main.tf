@@ -101,11 +101,19 @@ resource "aws_security_group" "mongodb" {
   vpc_id      = aws_vpc.main.id
 
   ingress {
-    description     = "MongoDB solo desde Lambda"
+    description     = "MongoDB desde Lambda"
     from_port       = 27017
     to_port         = 27017
     protocol        = "tcp"
     security_groups = [aws_security_group.lambda.id]
+  }
+
+  ingress {
+    description     = "MongoDB desde API ECS"
+    from_port       = 27017
+    to_port         = 27017
+    protocol        = "tcp"
+    security_groups = [aws_security_group.ecs.id]
   }
 
   egress {
@@ -118,5 +126,57 @@ resource "aws_security_group" "mongodb" {
 
   tags = {
     Name = "${var.project_name}-mongodb-sg-${var.environment}"
+  }
+}
+
+# --- ALB + ECS (Fase 5) ---
+
+resource "aws_security_group" "alb" {
+  name        = "${var.project_name}-alb-sg-${var.environment}"
+  description = "Public ALB for API"
+  vpc_id      = aws_vpc.main.id
+
+  ingress {
+    description = "HTTP publico lab"
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = {
+    Name = "${var.project_name}-alb-sg-${var.environment}"
+  }
+}
+
+resource "aws_security_group" "ecs" {
+  name        = "${var.project_name}-ecs-sg-${var.environment}"
+  description = "Tareas ECS API"
+  vpc_id      = aws_vpc.main.id
+
+  ingress {
+    description     = "API desde ALB"
+    from_port       = 8000
+    to_port         = 8000
+    protocol        = "tcp"
+    security_groups = [aws_security_group.alb.id]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = {
+    Name = "${var.project_name}-ecs-sg-${var.environment}"
   }
 }

@@ -105,5 +105,12 @@ module "compute" {
   mongodb_database      = var.mongodb_database
   lab_role_arn          = data.aws_iam_role.lab_role.arn
 
-  depends_on = [module.storage, module.networking]
+  aws_region              = data.aws_region.current.name
+  dynamodb_table_name     = module.database.sensor_table_name
+  vpc_id                  = module.networking.vpc_id
+  ecs_subnet_ids          = module.networking.ecs_subnet_ids
+  ecs_security_group_id   = module.networking.ecs_security_group_id
+  alb_security_group_id   = module.networking.alb_security_group_id
+
+  depends_on = [module.storage, module.networking, module.database]
 }

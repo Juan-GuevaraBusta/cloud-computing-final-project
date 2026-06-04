@@ -40,3 +40,31 @@ variable "mongodb_events_collection" {
   type    = string
   default = "sensor_events"
 }
+
+# --- ECS API (Fase 5) ---
+
+variable "aws_region" {
+  type        = string
+  description = "Región AWS (env vars del contenedor y logs)"
+}
+
+variable "dynamodb_table_name" {
+  type        = string
+  description = "Tabla DynamoDB de lecturas en tiempo real"
+}
+
+variable "vpc_id" {
+  type = string
+}
+
+variable "ecs_subnet_ids" {
+  type = list(string)
+}
+
+variable "ecs_security_group_id" {
+  type = string
+}
+
+variable "alb_security_group_id" {
+  type = string
+}

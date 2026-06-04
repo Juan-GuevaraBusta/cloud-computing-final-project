@@ -9,6 +9,7 @@ import json
 import logging
 import os
 from datetime import datetime, timezone
+from urllib.parse import unquote_plus
 
 import boto3
 from pymongo import MongoClient
@@ -35,13 +36,23 @@ def _get_collection():
     return _mongo_client[MONGODB_DB][MONGODB_COLLECTION]
 
 
+def _normalize_s3_key(key: str) -> str:
+    """
+    Decodifica la key del evento S3.
+
+    Las notificaciones envían '=' como '%3D' (ej. year%3D2026); GetObject
+    requiere la ruta real (year=2026).
+    """
+    return unquote_plus(key)
+
+
 def _parse_s3_records(event: dict) -> list[tuple[str, str]]:
-    """Extrae (bucket, key) de un evento de notificación S3."""
+    """Extrae (bucket, key decodificada) de un evento de notificación S3."""
     records = []
     for record in event.get("Records", []):
         bucket = record["s3"]["bucket"]["name"]
-        key = record["s3"]["object"]["key"]
-        records.append((bucket, key))
+        raw_key = record["s3"]["object"]["key"]
+        records.append((bucket, _normalize_s3_key(raw_key)))
     return records
 
 

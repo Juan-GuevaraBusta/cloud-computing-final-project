@@ -63,7 +63,34 @@
 
 ---
 
-## Fase 5 — ECS + Terraform completo
+## Fase 5 — ECS + ALB + Swagger en AWS ✅
+
+**Objetivo:** API FastAPI en Fargate detrás de ALB; MongoDB por IP privada en la VPC.
+
+**Implementado:**
+
+- `api/Dockerfile` (imagen `linux/amd64`)
+- `terraform/modules/networking`: SG ALB + ECS; MongoDB acepta tráfico desde ECS
+- `terraform/modules/compute/ecs.tf`: ECR, push automático en `apply`, cluster, task, servicio, ALB
+- Outputs: `api_swagger_url`, `ecr_repository_url`
+- `make api-ecr-push` / `make api-ecs-redeploy` para actualizar código sin `terraform apply` completo
+
+**Despliegue:**
+
+```bash
+make aws-up   # requiere Docker; publica imagen y crea ECS
+```
+
+Tras 2–3 min (Mongo + tarea ECS healthy):
+
+```bash
+terraform -chdir=terraform output -raw api_swagger_url
+curl "$(terraform -chdir=terraform output -raw api_swagger_url | sed 's|/docs||')/health"
+```
+
+**Verificación:** `/health` con `mongodb: ok` y `dynamodb: ok`; `/current` y `/recent` con datos del simulador.
+
+**Puerta hacia Fase 6:** ver `docs/PUERTAS.md` (Fase 5 → 6).
 
 ---
 

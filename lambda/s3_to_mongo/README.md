@@ -8,7 +8,7 @@ Función **AWS Lambda** disparada por `s3:ObjectCreated:*` en el bucket de senso
 
 | Archivo | Responsabilidad |
 |---------|-----------------|
-| `handler.py` | Lógica: S3 GetObject → insert MongoDB, índice único `s3_key` |
+| `handler.py` | Lógica: S3 GetObject → insert MongoDB, índice único `s3_key` (decodifica `%3D` en keys del evento) |
 | `requirements.txt` | Dependencia `pymongo` |
 | `build.sh` | Genera carpeta `build/` para el zip de despliegue |
 | `build/` | Artefacto generado (ignorar en Git) |

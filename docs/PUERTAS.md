@@ -86,7 +86,7 @@ Enlaces: [Fases del proyecto](FASES.md) · [Decisiones de arquitectura](DECISION
 
 ---
 
-## Fase 4 → Fase 5 (ECS) — pendiente
+## Fase 4 → Fase 5 (ECS) ✅
 
 ### Preguntas
 
@@ -101,6 +101,24 @@ Enlaces: [Fases del proyecto](FASES.md) · [Decisiones de arquitectura](DECISION
 2. Desacoplar y reintentos; la regla IoT no espera el log en CloudWatch.
 3. CloudWatch Logs del **alert_consumer** (`URGENCIA IoT`).
 4. Default **30°C** en `terraform/variables.tf` → `temperature_alert_threshold` (SQL: `value > 30`).
+
+---
+
+## Fase 5 → Fase 6 (nuevo sensor) — pendiente
+
+### Preguntas
+
+1. ¿Por qué la API en ECS puede usar MongoDB y tu laptop a veces no?
+2. ¿Qué URL usas para Swagger en AWS y qué health check usa el ALB?
+3. ¿Cómo actualizas la API en ECS sin destruir todo el stack?
+4. ¿Qué rol IAM usa la tarea ECS y por qué?
+
+### Respuestas modelo
+
+1. ECS está en la VPC; MongoDB escucha en IP privada del EC2. Local necesita túnel/VPN o solo DynamoDB funciona.
+2. `terraform output -raw api_swagger_url` → `http://<alb-dns>/docs`; ALB hace GET `/health` (200).
+3. `make api-ecs-redeploy` (push ECR + `force-new-deployment`).
+4. **LabRole** — Learner Lab no permite crear roles IAM propios.
 
 ---
 

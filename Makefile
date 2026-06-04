@@ -1,4 +1,4 @@
-.PHONY: aws-up aws-down local-up local-down logs clean lambda-build api-run api-install
+.PHONY: aws-up aws-down local-up local-down logs clean lambda-build api-run api-install api-ecr-push api-ecs-redeploy
 
 # --- Comandos AWS (Terraform) ---
 
@@ -8,11 +8,13 @@ lambda-build:
 	bash lambda/build_all.sh
 
 aws-up: lambda-build
-	@echo "Desplegando infraestructura en AWS (IoT, DynamoDB, S3, VPC, EC2 MongoDB, Lambda)..."
+	@echo "Desplegando infraestructura en AWS (IoT, DynamoDB, S3, VPC, EC2 MongoDB, Lambda, ECS API)..."
+	@echo "Requiere Docker en PATH para publicar la imagen de la API en ECR."
 	mkdir -p edge_gateway/certs
 	cd terraform && terraform init -upgrade && terraform apply -auto-approve
 	@echo "Infraestructura desplegada. Certificados y mosquitto.conf generados."
 	@echo "URI MongoDB (sensible): terraform -chdir=terraform output -raw mongodb_uri"
+	@echo "Swagger en AWS: terraform -chdir=terraform output -raw api_swagger_url"
 
 aws-down:
 	@echo "Destruyendo infraestructura en AWS..."
@@ -42,6 +44,20 @@ api-install:
 api-run:
 	@echo "Swagger UI: http://127.0.0.1:8000/docs"
 	cd api && ../venv/bin/uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
+
+# Re-publicar imagen tras cambios en api/ (stack ya desplegado)
+api-ecr-push:
+	chmod +x terraform/modules/compute/scripts/push_api_image.sh
+	@ECR=$$(cd terraform && terraform output -raw ecr_repository_url); \
+	REGION=$${AWS_REGION:-us-east-1}; \
+	bash terraform/modules/compute/scripts/push_api_image.sh $$ECR $$REGION
+
+api-ecs-redeploy: api-ecr-push
+	@REGION=$${AWS_REGION:-us-east-1}; \
+	CLUSTER=$$(cd terraform && terraform output -raw ecs_cluster_name); \
+	SVC=$$(cd terraform && terraform output -raw ecs_service_name); \
+	aws ecs update-service --cluster "$$CLUSTER" --service "$$SVC" --force-new-deployment --region "$$REGION"; \
+	echo "Redeploy ECS solicitado ($$CLUSTER / $$SVC)"
 
 clean: local-down aws-down
 	@echo "Limpiando certificados locales..."

@@ -12,3 +12,25 @@ output "mongodb_uri" {
   value       = local.mongodb_uri
   sensitive   = true
 }
+
+output "ecr_repository_url" {
+  description = "URL del repositorio ECR de la API"
+  value       = aws_ecr_repository.api.repository_url
+}
+
+output "api_alb_dns_name" {
+  description = "DNS del ALB (Swagger en http://<dns>/docs)"
+  value       = aws_lb.api.dns_name
+}
+
+output "api_swagger_url" {
+  value = "http://${aws_lb.api.dns_name}/docs"
+}
+
+output "ecs_cluster_name" {
+  value = aws_ecs_cluster.main.name
+}
+
+output "ecs_service_name" {
+  value = aws_ecs_service.api.name
+}

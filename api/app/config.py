@@ -16,7 +16,8 @@ class Settings(BaseSettings):
     """Variables requeridas para DynamoDB y MongoDB."""
 
     model_config = SettingsConfigDict(
-        env_file=str(_ENV_FILE),
+        # En ECS no hay .env; solo variables del task definition.
+        env_file=str(_ENV_FILE) if _ENV_FILE.exists() else None,
         env_file_encoding="utf-8",
         extra="ignore",
     )
