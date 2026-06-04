@@ -59,7 +59,7 @@
 
 **Verificación:** CloudWatch log group del consumer con mensajes `URGENCIA IoT`.
 
-**Puerta hacia Fase 5:** ver `docs/PUERTAS.md` (sección Fase 4 → 5, al cerrar ECS).
+**Puerta hacia Fase 5:** ✅ [PUERTAS.md](PUERTAS.md) y [DECISIONES.md](DECISIONES.md#puerta-fase-4--fase-5--respuestas-aprobada).
 
 ---
 
@@ -90,8 +90,21 @@ curl "$(terraform -chdir=terraform output -raw api_swagger_url | sed 's|/docs||'
 
 **Verificación:** `/health` con `mongodb: ok` y `dynamodb: ok`; `/current` y `/recent` con datos del simulador.
 
-**Puerta hacia Fase 6:** ver `docs/PUERTAS.md` (Fase 5 → 6).
+**Puerta hacia Fase 6:** ✅ [PUERTAS.md](PUERTAS.md#fase-5--fase-6-preparación-sustentación-) · Demo: [SUSTENTACION.md](SUSTENTACION.md).
 
 ---
 
 ## Fase 6 — Nuevo sensor (sustentación)
+
+**Objetivo (enunciado):** demostrar en vivo un tercer tipo de sensor.
+
+**Guía completa paso a paso:** [docs/SUSTENTACION.md](SUSTENTACION.md)
+
+**Resumen:**
+
+1. Extender `python_device/sensor_simulator.py` / `docker-compose.yml` con nuevo `SENSOR_TYPE` y `CLIENT_ID`.
+2. `make local-up` y ver publicaciones en logs.
+3. Swagger (ALB): `POST /sensors` → `GET .../current`, `/recent`, `/history`.
+4. Repaso oral: [PUERTAS.md](PUERTAS.md) Fase 5 → 6.
+
+**Puerta:** respuestas en [DECISIONES.md — Puerta Fase 5 → Fase 6](DECISIONES.md#puerta-fase-5--fase-6--respuestas-aprobada--preparación-sustentación).

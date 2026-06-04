@@ -99,6 +99,16 @@ Para llegar a la Arquitectura Objetivo, debes completar los siguientes hitos usa
    - Registrar el nuevo sensor en el sistema utilizando el endpoint `POST /sensors`.
    - Verificar la correcta ingesta de datos probando los endpoints de lectura (`GET /sensor/{id}/current`, etc.) para obtener sus valores.
 
+### Documentación del proyecto (fases 0–5 completas)
+
+| Documento | Contenido |
+|-----------|-----------|
+| [docs/SUSTENTACION.md](docs/SUSTENTACION.md) | **Guía de sustentación:** paso a paso de la demo, checklist y comandos |
+| [docs/DECISIONES.md](docs/DECISIONES.md) | Decisiones de arquitectura y respuestas aprobadas por fase |
+| [docs/PUERTAS.md](docs/PUERTAS.md) | Preguntas de repaso antes de cada fase |
+| [docs/FASES.md](docs/FASES.md) | Estado de implementación por fase |
+| [FLUJO.md](FLUJO.md) | Flujo de datos y seguridad (mTLS, reglas IoT) |
+
 ---
 
 *(Debajo de esta línea se encuentran las instrucciones originales para ejecutar y probar el Laboratorio Base)*

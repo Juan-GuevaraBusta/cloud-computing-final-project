@@ -1,6 +1,6 @@
 # Decisiones de arquitectura (proyecto final)
 
-Documento cerrado en **Fase 1**. Cualquier cambio debe actualizarse aquí antes de implementar.
+Documento de arquitectura del proyecto. **Fases 0–5 cerradas** en implementación; Fase 6 (sustentación en vivo) documentada en [SUSTENTACION.md](SUSTENTACION.md). Cualquier cambio técnico debe actualizarse aquí antes de implementar.
 
 ---
 
@@ -158,7 +158,16 @@ DynamoDB **no se elimina**: sigue alimentado por IoT para tiempo real y reciente
 
 4. **Mongo en VPC privada:** la URI apunta a IP privada del EC2 (`10.42.x.x`). Desde el Mac sin SSM/túnel no hay ruta; `health` puede quedar `degraded`. En **ECS** (misma VPC) sí funciona. Alternativa temporal en lab: regla **SG** que permita tu IP en el puerto 27017.
 
-**Estado:** Fase 3 cerrada para avanzar a **Fase 4** (alertas IoT → Lambda → SQS → CloudWatch).
+**Estado:** Fase 3 cerrada ✅
+
+---
+
+## Puerta Fase 4 → Fase 5 — Respuestas (aprobada)
+
+1. **Regla 3:** `SELECT * FROM 'lab/sensors/data' WHERE sensor_type = 'temperature' AND value > 30` → Lambda `alert_publisher`.
+2. **SQS:** Desacopla IoT del log final; reintentos y DLQ sin bloquear la regla.
+3. **Alerta visible:** CloudWatch Logs del `alert_consumer`, mensaje `URGENCIA IoT`.
+4. **Umbral:** `temperature_alert_threshold = 30` en `terraform/variables.tf`.
 
 ---
 
@@ -173,6 +182,47 @@ DynamoDB **no se elimina**: sigue alimentado por IoT para tiempo real y reciente
 | Rol | LabRole |
 
 **Flujo:** IoT Rule 3 → publisher → SQS → consumer → log CRITICAL en CloudWatch.
+
+**Estado:** Fase 4 cerrada ✅
+
+---
+
+## Fase 5 — API en ECS (Fargate + ALB)
+
+| Parámetro | Valor |
+|-----------|--------|
+| Orquestación | ECS Fargate (`iot-edge-cluster-{env}`) |
+| Imagen | ECR `iot-edge-api-{env}`; build en `apply` (`api/Dockerfile`) |
+| Balanceo | ALB público HTTP 80 → target group puerto 8000 |
+| Health check ALB | `GET /health` → matcher 200 |
+| Swagger | `terraform output -raw api_swagger_url` → `http://<alb-dns>/docs` |
+| Variables en task | `MONGODB_URI`, `DYNAMODB_TABLE_NAME`, `AWS_REGION`, colecciones Mongo |
+| Rol IAM | **LabRole** (execution + task); Learner Lab sin `iam:CreateRole` |
+| Red ECS | Subnets públicas + `assign_public_ip` (pull ECR); SG ECS ← solo ALB |
+| Actualizar API | `make api-ecs-redeploy` (push ECR + `force-new-deployment`) |
+
+**Por qué ECS y no solo local:** la API debe leer MongoDB en IP privada; la tarea corre en la **misma VPC** que el EC2 de MongoDB.
+
+---
+
+## Corrección operativa — Lambda `s3_to_mongo` (keys S3)
+
+| Problema | Las notificaciones S3 envían la key con URL-encoding (`year%3D2026` en lugar de `year=2026`). `GetObject` con la key cruda devolvía **NoSuchKey** → 100 % errores → `sensor_events` vacío. |
+| Solución | `urllib.parse.unquote_plus` en `_normalize_s3_key` antes de leer S3 (`lambda/s3_to_mongo/handler.py`). |
+| Verificación | CloudWatch con `Insertado histórico`; `GET /sensor/{id}/history` en Swagger del ALB con `count` > 0. |
+
+**Nota:** objetos creados **antes** del arreglo no se reprocesan solos; el histórico se llena con eventos nuevos (simulador activo).
+
+---
+
+## Puerta Fase 5 → Fase 6 — Respuestas (aprobada — preparación sustentación)
+
+1. **ECS y MongoDB:** la tarea ECS está en la VPC y el SG de MongoDB permite 27017 desde el SG de ECS; el laptop local no tiene ruta a la IP privada sin túnel.
+2. **Swagger en AWS:** `terraform -chdir=terraform output -raw api_swagger_url`; ALB health check en `/health`.
+3. **Redeploy API:** `make api-ecs-redeploy` sin destruir el stack.
+4. **IAM ECS:** **LabRole** — no se pueden crear roles propios en AWS Academy.
+
+**Siguiente hito (Fase 6):** nuevo tipo de sensor + demo en vivo. Guía paso a paso: **[docs/SUSTENTACION.md](SUSTENTACION.md)**.
 
 ---
 
@@ -200,4 +250,18 @@ Usar esto para sustentación antes de pasar a Fase 2 (Lambda + MongoDB).
 - Preguntas 2–3: documentadas arriba; confirmar que puedes explicarlas sin leer en voz alta.
 - Pregunta 4: aceptada con matiz — `.env` solo local; en AWS usar Terraform/ECS.
 
-**Siguiente hito (Fase 2):** módulos `networking` + `compute`, EC2 `t3.micro` con MongoDB autenticado, Lambda S3→Mongo en VPC.
+---
+
+## Estado del proyecto (hasta Fase 5)
+
+| Fase | Tema | Estado |
+|------|------|--------|
+| 0 | Lab base MQTT → IoT → DynamoDB + S3 | ✅ |
+| 1 | Decisiones (`/recent`, catálogo, MongoDB) | ✅ |
+| 2 | VPC, EC2 MongoDB, Lambda S3→Mongo, sort key DynamoDB | ✅ |
+| 3 | API FastAPI local + Swagger | ✅ |
+| 4 | Alertas IoT → Lambda → SQS → CloudWatch | ✅ |
+| 5 | API en ECS + ALB + Swagger en AWS | ✅ |
+| 6 | Nuevo sensor en sustentación | Pendiente (ver [SUSTENTACION.md](SUSTENTACION.md)) |
+
+Documentación de repaso: **[PUERTAS.md](PUERTAS.md)** · Cronograma: **[FASES.md](FASES.md)** · Flujo técnico: **[FLUJO.md](../FLUJO.md)**.

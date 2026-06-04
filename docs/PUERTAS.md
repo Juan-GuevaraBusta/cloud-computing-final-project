@@ -1,19 +1,21 @@
 # Puertas de conocimiento (repaso para sustentación)
 
-Antes de pasar de fase, debes poder responder estas preguntas **sin leer apuntes**. Las respuestas modelo están al final de cada sección.
+Antes de pasar de fase, debes poder responder estas preguntas **sin leer apuntes**. Las respuestas modelo están al final de cada sección. Las respuestas **aprobadas del equipo** (resumen) están en **[DECISIONES.md](DECISIONES.md)**.
 
-Enlaces: [Fases del proyecto](FASES.md) · [Decisiones de arquitectura](DECISIONES.md)
+Enlaces: [Fases del proyecto](FASES.md) · [Guía de sustentación](SUSTENTACION.md) · [Decisiones de arquitectura](DECISIONES.md)
+
+**Estado:** puertas **Fase 0 → Fase 5** completas ✅ · Fase 6 = demo en vivo (ver [SUSTENTACION.md](SUSTENTACION.md)).
 
 ---
 
-## Fase 0 → Fase 1 (Laboratorio base)
+## Fase 0 → Fase 1 (Laboratorio base) ✅
 
 ### Preguntas
 
 1. ¿Qué tópico MQTT publican los sensores y qué campos trae el JSON?
 2. ¿Por qué Mosquitto es un *bridge* y no el sensor conectado directo a AWS?
 3. ¿Cuáles son los cuatro archivos en `edge_gateway/certs/` y cuál es secreto?
-4. Cuando llega un mensaje a IoT Core, ¿cuántas reglas se ejecutan y hacia dónde va cada una?
+4. Cuando llega un mensaje a IoT Core, ¿cuántas reglas se ejecutan y hacia dónde va cada una? (lab base: 2; proyecto final: 3)
 5. ¿Por qué DynamoDB (diseño inicial solo `device_id`) no guarda historial completo?
 6. ¿Cómo se organizan las rutas de los archivos en S3 y para qué sirve?
 7. ¿Qué comando destruye AWS y limpia certificados locales?
@@ -23,14 +25,16 @@ Enlaces: [Fases del proyecto](FASES.md) · [Decisiones de arquitectura](DECISION
 1. Tópico `lab/sensors/data`. Campos: `device_id`, `sensor_type`, **`value`**, `timestamp` (no existe campo `temperature`; la temperatura es un tipo y el número va en `value`).
 2. Mosquitto concentra sensores en la red local y reenvía por **mTLS** a IoT Core; los sensores no llevan certificados AWS.
 3. `AmazonRootCA1.pem`, `certificate.pem.crt`, `private.pem.key`, `public.pem.key`. Secreto: **`private.pem.key`** (firma la conexión mTLS del gateway).
-4. Dos reglas en paralelo: **DynamoDB** (hot) y **S3** (cold/histórico archivado).
+4. **Lab base:** dos reglas → DynamoDB y S3. **Proyecto final:** tres reglas → DynamoDB, S3 y alerta temperatura (Lambda).
 5. Solo partition key `device_id` → cada evento **sobrescribe** el ítem (device shadow / último valor).
 6. Particiones `data/year=.../month=.../day=.../` para consultas analíticas (Athena).
-7. `make clean`.
+7. `make clean` (o `make aws-down` + limpieza local).
+
+**Aprobada en:** [DECISIONES.md — Puerta Fase 0 → Fase 1](DECISIONES.md#puerta-fase-0--fase-1--respuestas-aprobada)
 
 ---
 
-## Fase 1 → Fase 2 (Decisiones)
+## Fase 1 → Fase 2 (Decisiones) ✅
 
 ### Preguntas
 
@@ -44,11 +48,13 @@ Enlaces: [Fases del proyecto](FASES.md) · [Decisiones de arquitectura](DECISION
 1. Sin sort key, la clave es solo `device_id` y cada `PutItem` reemplaza el anterior; no hay N eventos por sensor.
 2. **Catálogo** en MongoDB (`sensors`): metadatos (nombre, ubicación, tipo, alta, activo). MQTT solo ingiere **telemetría**.
 3. Separación hot/cold; S3 ya archiva todo; DynamoDB para actual/recientes; MongoDB para histórico completo (`/history`); coste y enunciado del proyecto.
-4. Local: archivo **`.env`** (en `.gitignore`). AWS: variables en Lambda/ECS vía Terraform o Secrets Manager.
+4. Local: archivo **`.env`** (en `.gitignore`). AWS: variables en Lambda/ECS vía Terraform — **nunca** en el repositorio.
+
+**Aprobada en:** [DECISIONES.md — Puerta Fase 1 → Fase 2](DECISIONES.md#puerta-fase-1--fase-2--respuestas-aprobada)
 
 ---
 
-## Fase 2 → Fase 3 (S3 → Lambda → MongoDB)
+## Fase 2 → Fase 3 (S3 → Lambda → MongoDB) ✅
 
 ### Preguntas
 
@@ -56,37 +62,41 @@ Enlaces: [Fases del proyecto](FASES.md) · [Decisiones de arquitectura](DECISION
 2. ¿Por qué la Lambda está en VPC?
 3. ¿Dónde se guarda el histórico y cómo se evita duplicar el mismo archivo S3?
 4. ¿Qué cambió en `SensorData-lab` respecto al lab base?
+5. *(Repaso post-implementación)* ¿Por qué la Lambda debía decodificar la key del evento S3 (`%3D` → `=`)?
 
 ### Respuestas modelo
 
 1. Evento **`s3:ObjectCreated:*`** en el bucket de sensores, prefijo **`data/`**. Lee el JSON y lo inserta en MongoDB colección **`sensor_events`**.
 2. MongoDB corre en EC2 con IP **privada**; puerto **27017** no expuesto a Internet; la Lambda debe estar en la **misma VPC** para conectarse.
-3. Base MongoDB **`iot`**, colección **`sensor_events`**. Idempotencia con índice único **`s3_key`**; reintento → `DuplicateKeyError` → se ignora. El `timestamp` del sensor identifica la **lectura**, no el archivo S3.
-4. Se añadió sort key **`timestamp`**: cada lectura es un ítem nuevo; **`GET /current`** y **`GET /recent`** usan `Query` + `Limit` (y orden descendente).
+3. Base MongoDB **`iot`**, colección **`sensor_events`**. Idempotencia con índice único **`s3_key`**; reintento → `DuplicateKeyError` → se ignora.
+4. Se añadió sort key **`timestamp`**: cada lectura es un ítem nuevo; **`GET /current`** y **`GET /recent`** usan `Query` + `Limit` (orden descendente).
+5. Las notificaciones S3 URL-encoden la key (`year%3D2026`); sin `unquote_plus`, `GetObject` falla con **NoSuchKey** y el histórico queda vacío.
+
+**Aprobada en:** [DECISIONES.md — Puerta Fase 2 → Fase 3](DECISIONES.md#puerta-fase-2--fase-3--respuestas-aprobada) · Detalle fix: [Corrección operativa Lambda](DECISIONES.md#corrección-operativa--lambda-s3_to_mongo-keys-s3)
 
 ---
 
-## Fase 3 → Fase 4 (API FastAPI) — pendiente al terminar Fase 3
+## Fase 3 → Fase 4 (API FastAPI) ✅
 
-### Preguntas (completar al cerrar la API)
+### Preguntas
 
 1. ¿Qué valida Pydantic en `POST /sensors` y qué error devuelve si el `device_id` ya existe?
 2. ¿Qué endpoint usa DynamoDB y cuál MongoDB? ¿Por qué?
 3. ¿Dónde se documentan los endpoints para quien consume la API sin leer el código?
 4. ¿Por qué `GET /history` puede fallar en local pero funcionar en ECS?
 
-### Respuestas modelo (guía)
+### Respuestas modelo
 
-1. Tipos, longitudes, campos requeridos; rechazo de campos extra (`model_config` extra=forbid). Duplicado → **409 Conflict**.
-2. `/current` y `/recent` → DynamoDB (hot/recientes). `/history`, `/sensors` → MongoDB (catálogo e histórico S3).
+1. Tipos, longitudes, campos requeridos; rechazo de campos extra (`extra=forbid`). Duplicado → **409 Conflict**.
+2. **DynamoDB:** `/current`, `/recent`. **MongoDB:** `/sensors`, `/history`.
 3. **Swagger UI** en `/docs` y OpenAPI en `/openapi.json` (FastAPI automático).
-4. MongoDB en IP privada de VPC; local requiere túnel/VPN; ECS en la misma VPC sí alcanza el EC2.
+4. MongoDB en IP privada de VPC; local sin túnel → `health` degradado; **ECS** en la misma VPC sí alcanza el EC2.
 
-**Respuestas aprobadas del equipo:** ver [DECISIONES.md — Puerta Fase 3 → Fase 4](DECISIONES.md#puerta-fase-3--fase-4--respuestas-aprobada).
+**Aprobada en:** [DECISIONES.md — Puerta Fase 3 → Fase 4](DECISIONES.md#puerta-fase-3--fase-4--respuestas-aprobada)
 
 ---
 
-## Fase 4 → Fase 5 (ECS) ✅
+## Fase 4 → Fase 5 (ECS + ALB) ✅
 
 ### Preguntas
 
@@ -99,12 +109,14 @@ Enlaces: [Fases del proyecto](FASES.md) · [Decisiones de arquitectura](DECISION
 
 1. `sensor_type = 'temperature' AND value > umbral` en `lab/sensors/data` → Lambda publicadora.
 2. Desacoplar y reintentos; la regla IoT no espera el log en CloudWatch.
-3. CloudWatch Logs del **alert_consumer** (`URGENCIA IoT`).
-4. Default **30°C** en `terraform/variables.tf` → `temperature_alert_threshold` (SQL: `value > 30`).
+3. CloudWatch Logs del **alert_consumer** (mensaje `URGENCIA IoT`).
+4. Default **30°C** en `terraform/variables.tf` → `temperature_alert_threshold`.
+
+**Aprobada en:** [DECISIONES.md — Puerta Fase 4 → Fase 5](DECISIONES.md#puerta-fase-4--fase-5--respuestas-aprobada)
 
 ---
 
-## Fase 5 → Fase 6 (nuevo sensor) — pendiente
+## Fase 5 → Fase 6 (Preparación sustentación) ✅
 
 ### Preguntas
 
@@ -112,13 +124,17 @@ Enlaces: [Fases del proyecto](FASES.md) · [Decisiones de arquitectura](DECISION
 2. ¿Qué URL usas para Swagger en AWS y qué health check usa el ALB?
 3. ¿Cómo actualizas la API en ECS sin destruir todo el stack?
 4. ¿Qué rol IAM usa la tarea ECS y por qué?
+5. ¿Qué demostrarás en vivo en la Fase 6 según el enunciado?
 
 ### Respuestas modelo
 
-1. ECS está en la VPC; MongoDB escucha en IP privada del EC2. Local necesita túnel/VPN o solo DynamoDB funciona.
-2. `terraform output -raw api_swagger_url` → `http://<alb-dns>/docs`; ALB hace GET `/health` (200).
+1. ECS está en la VPC; MongoDB escucha en IP privada del EC2. Local necesita túnel/VPN o solo DynamoDB funciona bien sin túnel.
+2. `terraform -chdir=terraform output -raw api_swagger_url` → `http://<alb-dns>/docs`; ALB hace **GET `/health`** (200).
 3. `make api-ecs-redeploy` (push ECR + `force-new-deployment`).
-4. **LabRole** — Learner Lab no permite crear roles IAM propios.
+4. **LabRole** — Learner Lab no permite `iam:CreateRole`.
+5. Nuevo `SENSOR_TYPE` en el simulador, nuevo servicio en `docker-compose.yml`, `POST /sensors`, y lecturas `/current`, `/recent`, `/history` en Swagger.
+
+**Aprobada en:** [DECISIONES.md — Puerta Fase 5 → Fase 6](DECISIONES.md#puerta-fase-5--fase-6--respuestas-aprobada--preparación-sustentación) · **Paso a paso demo:** [SUSTENTACION.md](SUSTENTACION.md)
 
 ---
 
@@ -126,5 +142,6 @@ Enlaces: [Fases del proyecto](FASES.md) · [Decisiones de arquitectura](DECISION
 
 1. Lee solo las **preguntas** de la fase.
 2. Responde en voz alta o por escrito.
-3. Compara con **respuestas modelo**.
-4. Si fallas más de una, vuelve al README de la carpeta técnica relacionada (`python_device`, `terraform`, `lambda`, `api`).
+3. Compara con **respuestas modelo** o el resumen en **DECISIONES.md**.
+4. Si fallas más de una, vuelve al README de la carpeta técnica (`python_device`, `terraform`, `lambda`, `api`).
+5. Antes de la sustentación, ensaya el guion en **[SUSTENTACION.md](SUSTENTACION.md)**.
