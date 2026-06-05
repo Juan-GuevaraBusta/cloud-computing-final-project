@@ -52,6 +52,8 @@ def generate_sensor_data():
         value = round(random.uniform(20.0, 35.0), 2)
     elif SENSOR_TYPE == "humidity":
         value = round(random.uniform(40.0, 60.0), 2)
+    elif SENSOR_TYPE == "pressure":
+        value = round(random.uniform(980.0, 1020.0), 2)
     else:
         # Tipos futuros (proyecto final): rango genérico hasta definir reglas por tipo
         value = round(random.uniform(0.0, 100.0), 2)
